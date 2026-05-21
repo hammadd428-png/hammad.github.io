@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crowns Cut | Luxury Apparel</title>
+    
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js for 3D Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#050505',
+                        'blood-red': '#8a0303',
+                        'bright-red': '#b90505',
+                        'subtle-grey': '#2a2a2a',
+                        'text-grey': '#a3a3a3'
+                    },
+                    fontFamily: {
+                        'serif': ['Cinzel', 'serif'],
+                        'sans': ['Lato', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8a0303;
+            border-radius: 4px;
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.8s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .hover-glow:hover {
+            box-shadow: 0 0 15px rgba(138, 3, 3, 0.6);
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid #2a2a2a;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-blood-red selection:text-white">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-panel border-b border-subtle-grey transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0 cursor-pointer" onclick="router('home')">
+                    <h1 class="font-serif text-2xl font-bold tracking-widest text-white">
+                        CROWNS <span class="text-blood-red">CUT</span>
+                    </h1>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-8">
+                    <a href="#" onclick="router('home')" class="text-gray-300 hover:text-blood-red transition">Home</a>
+                    <a href="#" onclick="router('collections')" class="text-gray-300 hover:text-blood-red transition">Collections</a>
+                    <a href="#" onclick="router('contact')" class="text-gray-300 hover:text-blood-red transition">Contact</a>
+                </div>
+
+                <!-- Icons -->
+                <div class="flex items-center space-x-6">
+                    <div class="relative cursor-pointer hover:text-blood-red transition" onclick="router('cart')">
+                        <i class="fas fa-shopping-bag text-xl"></i>
+                        <span id="cart-count" class="absolute -top-2 -right-2 bg-blood-red text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Injection Area -->
+    <main id="app" class="pt-20 min-h-screen flex flex-col"></main>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-subtle-grey py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+            <div>
+                <h3 class="font-serif text-xl text-white mb-4">CROWNS CUT</h3>
+                <p class="text-text-grey text-sm">Redefining modern luxury with darkness and elegance.</p>
+            </div>
+            <div>
+                <h3 class="text-white font-bold mb-4">Explore</h3>
+                <ul class="space-y-2 text-text-grey text-sm">
+                    <li onclick="router('collections')" class="cursor-pointer hover:text-blood-red">Collections</li>
+                    <li onclick="router('category', 'Shirts')" class="cursor-pointer hover:text-blood-red">Shirts</li>
+                    <li onclick="router('category', 'Jackets')" class="cursor-pointer hover:text-blood-red">Jackets</li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-white font-bold mb-4">Connect</h3>
+                <div class="flex justify-center md:justify-start space-x-4 text-xl">
+                    <i class="fab fa-instagram hover:text-blood-red cursor-pointer transition"></i>
+                    <i class="fab fa-twitter hover:text-blood-red cursor-pointer transition"></i>
+                    <i class="fab fa-tiktok hover:text-blood-red cursor-pointer transition"></i>
+                </div>
+            </div>
+        </div>
+        <div class="text-center text-text-grey text-xs mt-10">
+            &copy; 2025 Crowns Cut. All Rights Reserved.
+        </div>
+    </footer>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- DATA STATE ---
+        const state = {
+            cart: [],
+            products: [
+                { id: 1, name: "Obsidian Silk Shirt", category: "Shirts", price: 120, img: "400x500/000000/8a0303?text=Silk+Shirt", desc: "Pure silk, midnight black with hidden buttons." },
+                { id: 2, name: "Crimson Velvet Jacket", category: "Jackets", price: 350, img: "400x500/000000/8a0303?text=Velvet+Jacket", desc: "Deep red velvet tailored for the elite." },
+                { id: 3, name: "Shadow Trousers", category: "Trousers", price: 180, img: "400x500/000000/8a0303?text=Shadow+Trousers", desc: "Slim fit, Italian wool blend." },
+                { id: 4, name: "Royal Gold Signet", category: "Jewellery", price: 90, img: "400x500/000000/8a0303?text=Gold+Ring", desc: "18k Gold plated with onyx stone." },
+                { id: 5, name: "Midnight Trench", category: "Jackets", price: 450, img: "400x500/000000/8a0303?text=Trench+Coat", desc: "Water-resistant, high collar aesthetic." },
+                { id: 6, name: "Bloodline Tee", category: "Shirts", price: 85, img: "400x500/000000/8a0303?text=Bloodline+Tee", desc: "Premium cotton with embroidered logo." },
+            ]
+        };
+
+        // --- ROUTER ---
+        const app = document.getElementById('app');
+
+        function router(route, param = null) {
+            window.scrollTo(0, 0);
+            app.innerHTML = ''; // Clear current view
+            
+            // Remove 3D canvas if it exists (only needed on home)
+            const existingCanvas = document.getElementById('canvas-container');
+            if(existingCanvas && route !== 'home') existingCanvas.remove();
+
+            switch(route) {
+                case 'home': renderHome(); break;
+                case 'collections': renderCollections(); break;
+                case 'category': renderCategoryPage(param); break;
+                case 'product': renderProductDetail(param); break;
+                case 'cart': renderCart(); break;
+                case 'contact': renderContact(); break;
+                case 'checkout': renderCustomerForm(); break;
+                default: renderHome();
+            }
+        }
+
+        // --- VIEWS ---
+
+        function renderHome() {
+            // 3D Background Container
+            const canvasDiv = document.createElement('div');
+            canvasDiv.id = 'canvas-container';
+            document.body.prepend(canvasDiv);
+            init3D();
+
+            app.innerHTML = `
+                <section class="relative h-screen flex items-center justify-center text-center px-4 fade-in">
+                    <div class="z-10">
+                        <h2 class="text-blood-red text-lg tracking-[0.5em] uppercase mb-4">Est. 2025</h2>
+                        <h1 class="font-serif text-6xl md:text-8xl font-bold mb-6 text-white drop-shadow-lg">
+                            WEAR THE <br><span class="text-blood-red">CROWN</span>
+                        </h1>
+                        <p class="text-text-grey max-w-2xl mx-auto mb-10 text-lg">
+                            Luxury streetwear forged in darkness. Elegant designs for the modern royalty.
+                        </p>
+                        <div class="flex justify-center gap-6">
+                            <button onclick="router('collections')" class="px-8 py-4 bg-blood-red text-white font-bold tracking-wider hover:bg-bright-red transition hover:scale-105 hover-glow">
+                                SHOP NOW
+                            </button>
+                            <button onclick="router('category', 'Jackets')" class="px-8 py-4 border border-white text-white font-bold tracking-wider hover:bg-white hover:text-black transition">
+                                EXPLORE
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="py-20 bg-deep-black">
+                    <div class="max-w-7xl mx-auto px-4">
+                        <div class="flex justify-between items-end mb-12">
+                            <h2 class="font-serif text-3xl text-white">Best Sellers</h2>
+                            <button onclick="router('collections')" class="text-blood-red hover:text-white transition">View All &rarr;</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            ${state.products.slice(0,3).map(p => createProductCard(p)).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderCollections() {
+            const categories = ["Shirts", "Trousers", "Jackets", "Jewellery"];
+            app.innerHTML = `
+                <section class="py-16 max-w-7xl mx-auto px-4 fade-in">
+                    <h1 class="font-serif text-4xl text-center mb-16">COLLECTIONS</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        ${categories.map(cat => `
+                            <div onclick="router('category', '${cat}')" class="group relative h-80 overflow-hidden cursor-pointer border border-subtle-grey">
+                                <img src="https://placehold.co/800x600/111/8a0303?text=${cat}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 group-hover:bg-opacity-20 transition">
+                                    <h2 class="font-serif text-3xl text-white tracking-widest border-b-2 border-transparent group-hover:border-blood-red pb-1 transition-all">${cat.toUpperCase()}</h2>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderCategoryPage(category) {
+            const filtered = state.products.filter(p => p.category === category);
+            app.innerHTML = `
+                <section class="py-16 max-w-7xl mx-auto px-4 fade-in">
+                    <div class="mb-10">
+                        <button onclick="router('collections')" class="text-text-grey hover:text-white mb-4">&larr; Back to Collections</button>
+                        <h1 class="font-serif text-4xl text-white">${category.toUpperCase()}</h1>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        ${filtered.length ? filtered.map(p => createProductCard(p)).join('') : '<p>No products found.</p>'}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderProductDetail(id) {
+            const product = state.products.find(p => p.id == id);
+            app.innerHTML = `
+                <section class="py-20 max-w-7xl mx-auto px-4 fade-in">
+                     <button onclick="router('category', '${product.category}')" class="text-text-grey hover:text-white mb-8">&larr; Back</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div class="bg-subtle-grey p-1">
+                            <img src="https://placehold.co/${product.img}" class="w-full h-auto shadow-xl">
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <h3 class="text-blood-red tracking-widest text-sm mb-2">${product.category.toUpperCase()}</h3>
+                            <h1 class="font-serif text-4xl md:text-5xl mb-6">${product.name}</h1>
+                            <p class="text-2xl text-gray-200 mb-8">$${product.price}.00</p>
+                            <p class="text-text-grey mb-8 leading-relaxed">${product.desc} Designed with precision for the modern aesthetic. Crafted from premium materials to ensure longevity and style.</p>
+                            
+                            <div class="mb-8">
+                                <label class="block text-sm mb-2 text-text-grey">SIZE</label>
+                                <select class="bg-black border border-subtle-grey text-white px-4 py-3 w-full md:w-1/2 focus:border-blood-red outline-none">
+                                    <option>Small</option>
+                                    <option>Medium</option>
+                                    <option>Large</option>
+                                    <option>X-Large</option>
+                                </select>
+                            </div>
+
+                            <button onclick="addToCart(${product.id})" class="w-full md:w-2/3 bg-blood-red text-white py-4 font-bold tracking-wider hover:bg-bright-red transition">
+                                ADD TO BASKET
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderCart() {
+            let total = 0;
+            const cartItemsHtml = state.cart.map((item, index) => {
+                total += item.price;
+                return `
+                    <div class="flex justify-between items-center border-b border-subtle-grey py-6 fade-in">
+                        <div class="flex items-center gap-4">
+                            <img src="https://placehold.co/100x100/111/8a0303?text=Item" class="w-20 h-20 object-cover">
+                            <div>
+                                <h3 class="font-bold text-lg">${item.name}</h3>
+                                <p class="text-text-grey text-sm">${item.category}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-8">
+                            <p class="font-mono">$${item.price}</p>
+                            <button onclick="removeFromCart(${index})" class="text-subtle-grey hover:text-blood-red transition"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            app.innerHTML = `
+                <section class="py-16 max-w-4xl mx-auto px-4 min-h-[60vh]">
+                    <h1 class="font-serif text-3xl mb-8 border-b border-subtle-grey pb-4">YOUR BASKET</h1>
+                    ${state.cart.length === 0 ? '<p class="text-text-grey">Your basket is empty.</p>' : `
+                        <div>
+                            ${cartItemsHtml}
+                            <div class="flex justify-between items-center mt-8 text-xl font-bold">
+                                <span>TOTAL</span>
+                                <span>$${total}.00</span>
+                            </div>
+                            <button onclick="router('checkout')" class="w-full mt-8 bg-white text-black py-4 font-bold tracking-wider hover:bg-blood-red hover:text-white transition">
+                                PROCEED TO CHECKOUT
+                            </button>
+                        </div>
+                    `}
+                </section>
+            `;
+        }
+
+        function renderCustomerForm() {
+            app.innerHTML = `
+                <section class="py-16 max-w-2xl mx-auto px-4 fade-in">
+                    <h1 class="font-serif text-3xl mb-2 text-center">SECURE CHECKOUT</h1>
+                    <p class="text-text-grey text-center mb-10">Enter your details to complete the order.</p>
+                    
+                    <form onsubmit="handleOrderSubmit(event)" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <input type="text" required placeholder="Full Name" class="bg-black border border-subtle-grey p-4 text-white focus:border-blood-red outline-none w-full">
+                            <input type="email" required placeholder="Email Address" class="bg-black border border-subtle-grey p-4 text-white focus:border-blood-red outline-none w-full">
+                        </div>
+                        <input type="tel" required placeholder="Phone Number" class="bg-black border border-subtle-grey p-4 text-white focus:border-blood-red outline-none w-full">
+                        <textarea required placeholder="Delivery Address" rows="3" class="bg-black border border-subtle-grey p-4 text-white focus:border-blood-red outline-none w-full"></textarea>
+                        <textarea placeholder="Order Notes / Custom Requests" rows="2" class="bg-black border border-subtle-grey p-4 text-white focus:border-blood-red outline-none w-full"></textarea>
+                        
+                        <button type="submit" class="w-full bg-blood-red text-white py-5 font-bold tracking-widest hover:bg-bright-red transition hover:shadow-[0_0_20px_rgba(138,3,3,0.5)]">
+                            PLACE ORDER
+                        </button>
+                    </form>
+                </section>
+            `;
+        }
+
+        function renderContact() {
+            app.innerHTML = `
+                <section class="py-16 max-w-3xl mx-auto px-4 fade-in">
+                    <h1 class="font-serif text-4xl text-center mb-12">CONTACT US</h1>
+                    <div class="glass-panel p-8 md:p-12">
+                        <form onsubmit="alert('Message Sent! We will contact you shortly.'); return false;" class="space-y-6">
+                            <input type="text" placeholder="Name" class="bg-transparent border-b border-subtle-grey w-full py-3 text-white focus:border-blood-red outline-none transition">
+                            <input type="email" placeholder="Email" class="bg-transparent border-b border-subtle-grey w-full py-3 text-white focus:border-blood-red outline-none transition">
+                            <textarea placeholder="Message" rows="4" class="bg-transparent border-b border-subtle-grey w-full py-3 text-white focus:border-blood-red outline-none transition"></textarea>
+                            <button type="submit" class="px-10 py-3 border border-blood-red text-blood-red font-bold hover:bg-blood-red hover:text-white transition uppercase tracking-wider">
+                                Send Message
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            `;
+        }
+
+        // --- HELPER FUNCTIONS ---
+
+        function createProductCard(product) {
+            return `
+                <div class="group cursor-pointer fade-in" onclick="router('product', ${product.id})">
+                    <div class="relative overflow-hidden mb-4 aspect-[4/5]">
+                        <img src="https://placehold.co/${product.img}" alt="${product.name}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                        <div class="absolute bottom-0 left-0 w-full bg-blood-red text-white text-center py-3 translate-y-full group-hover:translate-y-0 transition duration-300 font-bold tracking-widest text-sm">
+                            VIEW DETAILS
+                        </div>
+                    </div>
+                    <h3 class="font-serif text-lg">${product.name}</h3>
+                    <p class="text-text-grey text-sm">$${product.price}</p>
+                </div>
+            `;
+        }
+
+        function addToCart(id) {
+            const product = state.products.find(p => p.id === id);
+            state.cart.push(product);
+            updateCartCount();
+            alert(`${product.name} added to basket.`);
+        }
+
+        function removeFromCart(index) {
+            state.cart.splice(index, 1);
+            updateCartCount();
+            renderCart(); // Re-render to show updated list
+        }
+
+        function updateCartCount() {
+            document.getElementById('cart-count').innerText = state.cart.length;
+        }
+
+        function handleOrderSubmit(e) {
+            e.preventDefault();
+            alert('Order Placed Successfully! Welcome to the Crowns Cut family.');
+            state.cart = [];
+            updateCartCount();
+            router('home');
+        }
+
+        // --- 3D BACKGROUND LOGIC (Three.js) ---
+        function init3D() {
+            // Only run if canvas container exists
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Create Abstract "Crown" Geometry (Torus Knot)
+            const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0x8a0303, 
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3
+            });
+            const torusKnot = new THREE.Mesh(geometry, material);
+            scene.add(torusKnot);
+
+            camera.position.z = 30;
+
+            // Animation Loop
+            function animate() {
+                if(!document.getElementById('canvas-container')) return; // Stop if navigated away
+                requestAnimationFrame(animate);
+                torusKnot.rotation.x += 0.002;
+                torusKnot.rotation.y += 0.002;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if(!document.getElementById('canvas-container')) return;
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Initial Load
+        window.onload = () => router('home');
+
+    </script>
+</body>
+</html>
